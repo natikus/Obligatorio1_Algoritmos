@@ -4,7 +4,7 @@
 CrearGrupo() {
     group=$1
 
-    adgroup addcn -n "$group" -dn "CN=$group,DC=example,DC=com"
+    groupadd $group
 }
 
 # CCrea los usuarios
@@ -18,7 +18,7 @@ newuser() {
     
 
     #lo añado al grupo que le corresponde
-    addgroup -g "$groupname" "$username"
+    sudo usermod -aG "$groupname" "$username"
 }
 
 # Set user access times
@@ -26,14 +26,16 @@ setuseraccess() {
     groupname=$1
     timespec=$2
 
-    # obtengo los usuarios que tengo que setear
-    users=$(groups "$groupname" | awk '{print $1}')
+    users= getent group $groupname | cut -d: -f4
 
-    for user in $users; do
-        # seteo los horqarios de cada usuario
-        usermod -T "$timespec" "$user"
-        echo "Access time set for user '$user'."
-    done
+    for $user in $users
+        # pone la condicion en el archivo de configuracion
+        echo "login;*;$user;$timespec" | sudo tee -a /etc/security/time.conf > /dev/null
+
+        # pone como parametro el horario cuando se van a logear
+        if ! grep -q "pam_time.so" /etc/pam.d/login; then
+            echo "account required pam_time.so" | sudo tee -a /etc/pam.d/login > /dev/null
+        fi
 }
 
 #llamo a la c¿funcion para crear los grupos
@@ -48,19 +50,19 @@ newuser CONTADURIA02 CONTA02 Contaduría
 newuser CONTADURIA03 CONTA03 Contaduría
 newuser CONTADURIA04 CONTA04 Contaduría
 newuser CONTADURIA05 CONTA05 Contaduría
-setuseraccess Contaduría "L-S,08:00-17:00" #seteo sus horarios
+setuseraccess Contaduría "Al0800-1700" #seteo sus horarios
 
 #creo los usuarios de Juridica
 newuser JURIDICA01 JURI01 Jurídica
 newuser JURIDICA02 JURI02 Jurídica
 newuser JURIDICA03 JURI03 Jurídica
-setuseraccess Jurídica "L-S,08:00-17:00" #Seteo sus horarios
+setuseraccess Jurídica "Al0800-1700" #Seteo sus horarios
 
 #creo los usuarios de Soporte
 newuser SOPORTE01 SOPOR01 Soporte
 newuser SOPORTE02 SOPOR02 Soporte
 newuser SOPORTE03 SOPOR03 Soporte
-setuseraccess Soporte "L-S,07:00-21:00"
+setuseraccess Soporte "Al0700-2100"
 
 # Creo los usuarios de INstalador que no llevan ninguna restringcion
 newuser INSTALADOR01 INSTALA01 Instalador
