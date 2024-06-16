@@ -1,25 +1,43 @@
+Import-Module ActiveDirectory
+
 function NewUser {
     param (
-        [String] $Name
-        [String] $Password
-        [String] $Group
-    )
-    New-LocalUser -Username $Name -Password (ConvertTo-SecureString $Password -AsPlainText -Force)#creo el usuario
-    Add-LocalGroupMember -Group $Group -Members $Name #lo añado a su grupo correspondiente 
-
-}
-function Access {
-    param (
-        [String] $Group
-        [String] $Time
-    )
-    $Users = Get-LocalGroupMember -Group $Group | Select-Object -ExpandProperty Name #extraigo todos los usuarios de el grupo
-    foreach ($User in $Users) {#recorro esa lista
-        $PCName, $Name = $User.split("\") #me quedo solo con el nombre de el usuario
-        net user $Name /times:$Time 2> $null #establezco la temporalizacion
-    }
+        [Parameter(Mandatory = $true)]
+        [String] $Nombre,
     
+        [Parameter(Mandatory = $true)]
+        [String] $Contrasena,
+    
+        [Parameter(Mandatory = $true)]
+        [String] $Grupo
+    )
+    
+    # Crea el usuario 
+    New-LocalUser -Name $Nombre -Password (ConvertTo-SecureString $Contraseña -AsPlainText -Force)
+    # Lo añado al grupo
+    Add-LocalGroupMember -Group $Grupo -Members $Nombre
+    
+    Write-Host "Usuario '$Nombre' creado y agregado al grupo '$Grupo'."
 }
+    
+function Set-UserAccess {
+    param (
+        [Parameter(Mandatory = $true)]
+        [String] $Grupo,
+        
+        [Parameter(Mandatory = $true)]
+        [String] $Tiempo
+    )
+    #obtengo la lista de usuarios que pertenecen al grupo
+    $Usuarios = Get-LocalGroupMember -Group $Grupo | Select-Object -ExpandProperty Name
+        
+    foreach ($Usuario in $Usuarios) {
+        $Usuario = "$($Usuario.split('\')[1])"  # extraigo el nombre de usuario sin dominio
+        #establezco el horario de uso
+        net user $Usuario /times:$Tiempo
+        Write-Host "Tiempo de acceso establecido para el usuario '$Usuario'."
+    }
+}      
 #creo los grupos a los que añadire a los usuarios
 New-ADGroup -Name "Contaduria"
 New-ADGroup -Name "Juridica"
@@ -27,25 +45,25 @@ New-ADGroup -Name "Soporte"
 New-ADGroup -Name "instalador"
 
 #creo los usuarios de contaduria
-UserName -Name "CONTADURIA01" -Password "CONTA01" -Group "Contaduria"
-UserName -Name "CONTADURIA02" -Password "CONTA02" -Group "Contaduria"
-UserName -Name "CONTADURIA03" -Password "CONTA03" -Group "Contaduria"
-UserName -Name "CONTADURIA04" -Password "CONTA04" -Group "Contaduria"
-UserName -Name "CONTADURIA05" -Password "CONTA05" -Group "Contaduria"
+NewUser -Name "CONTADURIA01" -Password "CONTA01" -Group "Contaduria"
+NewUser -Name "CONTADURIA02" -Password "CONTA02" -Group "Contaduria"
+NewUser -Name "CONTADURIA03" -Password "CONTA03" -Group "Contaduria"
+NewUser -Name "CONTADURIA04" -Password "CONTA04" -Group "Contaduria"
+NewUser -Name "CONTADURIA05" -Password "CONTA05" -Group "Contaduria"
 Access -Group "Contaduria" -Time "L-s,08:00-17:00" #limito su acceso 
 #Creo los usuarios de Juridica
-UserName -Name "JURIDICA01" -Password "JURI01" -Group "Juridica"
-UserName -Name "JURIDICA02" -Password "JURI02" -Group "Juridica"
-UserName -Name "JURIDICA03" -Password "JURI03" -Group "Juridica"
+NewUser -Name "JURIDICA01" -Password "JURI01" -Group "Juridica"
+NewUser -Name "JURIDICA02" -Password "JURI02" -Group "Juridica"
+NewUser -Name "JURIDICA03" -Password "JURI03" -Group "Juridica"
 Access -Group "Juridica" -Time "L-s,08:00-17:00"#limito su acceso 
 #creo los usuarios de soporte
-UserName -Name "SOPORTE01" -Password "SOPOR01" -Group "Soporte"
-UserName -Name "SOPORTE02" -Password "SOPOR02" -Group "Soporte"
-UserName -Name "SOPORTE03" -Password "SOPOR03" -Group "Soporte"
+NewUser -Name "SOPORTE01" -Password "SOPOR01" -Group "Soporte"
+NewUser -Name "SOPORTE02" -Password "SOPOR02" -Group "Soporte"
+NewUser -Name "SOPORTE03" -Password "SOPOR03" -Group "Soporte"
 Access -Group "Soporte" -Time "L-s,07:00-21:00"#limito su acceso 
 #creo los usuarios de instalador
-UserName -Name "INSTALADOR01" -Password "INSTALA01" -Group "Instalador"
-UserName -Name "INSTALADOR02" -Password "INSTALA02" -Group "Instalador" #No tienen limitaciones
+NewUser -Name "INSTALADOR01" -Password "INSTALA01" -Group "Instalador"
+NewUser -Name "INSTALADOR02" -Password "INSTALA02" -Group "Instalador" #No tienen limitaciones
 
 #2)
 #creo la carpeta en la raiz
