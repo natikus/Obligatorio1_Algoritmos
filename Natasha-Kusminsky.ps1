@@ -1,32 +1,32 @@
-Import-Module ActiveDirectory
+
 
 function NewUser {
     param (
         [Parameter(Mandatory = $true)]
-        [String] $Nombre,
+        [String] $Name,
     
         [Parameter(Mandatory = $true)]
-        [String] $Contrasena,
+        [String] $Password,
     
         [Parameter(Mandatory = $true)]
-        [String] $Grupo
+        [String] $Group
     )
     
     # Crea el usuario 
-    New-LocalUser -Name $Nombre -Password (ConvertTo-SecureString $Contraseña -AsPlainText -Force)
+    New-LocalUser -Name $Name -Password (ConvertTo-SecureString $Password -AsPlainText -Force)
     # Lo añado al grupo
     Add-LocalGroupMember -Group $Grupo -Members $Nombre
     
-    Write-Host "Usuario '$Nombre' creado y agregado al grupo '$Grupo'."
+    Write-Host "Usuario '$Name' creado y agregado al grupo '$Group'."
 }
     
-function Set-UserAccess {
+function Access {
     param (
         [Parameter(Mandatory = $true)]
-        [String] $Grupo,
+        [String] $Group,
         
         [Parameter(Mandatory = $true)]
-        [String] $Tiempo
+        [String] $Time
     )
     #obtengo la lista de usuarios que pertenecen al grupo
     $Usuarios = Get-LocalGroupMember -Group $Grupo | Select-Object -ExpandProperty Name
@@ -39,10 +39,10 @@ function Set-UserAccess {
     }
 }      
 #creo los grupos a los que añadire a los usuarios
-New-ADGroup -Name "Contaduria"
-New-ADGroup -Name "Juridica"
-New-ADGroup -Name "Soporte"
-New-ADGroup -Name "instalador"
+New-LocalGroup -Name "Contaduria"
+New-LocalGroup -Name "Juridica"
+New-LocalGroup -Name "Soporte"
+New-LocalGroup -Name "instalador"
 
 #creo los usuarios de contaduria
 NewUser -Name "CONTADURIA01" -Password "CONTA01" -Group "Contaduria"
