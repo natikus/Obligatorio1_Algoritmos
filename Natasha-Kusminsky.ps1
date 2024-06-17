@@ -1,5 +1,3 @@
-
-
 function NewUser {
     param (
         [Parameter(Mandatory = $true)]
@@ -15,7 +13,7 @@ function NewUser {
     # Crea el usuario 
     New-LocalUser -Name $Name -Password (ConvertTo-SecureString $Password -AsPlainText -Force)
     # Lo añado al grupo
-    Add-LocalGroupMember -Group $Grupo -Members $Nombre
+    Add-LocalGroupMember -Group $Group -Member $Name
     
     Write-Host "Usuario '$Name' creado y agregado al grupo '$Group'."
 }
@@ -29,12 +27,12 @@ function Access {
         [String] $Time
     )
     #obtengo la lista de usuarios que pertenecen al grupo
-    $Usuarios = Get-LocalGroupMember -Group $Grupo | Select-Object -ExpandProperty Name
+    $Usuarios = Get-LocalGroupMember -Group $Group | Select-Object -ExpandProperty Name
         
     foreach ($Usuario in $Usuarios) {
         $Usuario = "$($Usuario.split('\')[1])"  # extraigo el nombre de usuario sin dominio
         #establezco el horario de uso
-        net user $Usuario /times:$Tiempo
+        net user $Usuario /times:$Time
         Write-Host "Tiempo de acceso establecido para el usuario '$Usuario'."
     }
 }      
@@ -66,20 +64,18 @@ NewUser -Name "INSTALADOR01" -Password "INSTALA01" -Group "Instalador"
 NewUser -Name "INSTALADOR02" -Password "INSTALA02" -Group "Instalador" #No tienen limitaciones
 
 #2)
+.\Copia.ps1
 #creo la carpeta en la raiz
 New-Item -ItemType Directory -Path "C:\compartida"
 #la guardo en una variable
-$carpetaCompartida = Get-ChildItem -Path "C:\compartida"
+$carpetaCompartida = Get-Item -Path "C:\compartida"
 #la comparto con todos y les doy acceso a todos
-New-SmbShare -Name "compartida" -Path $carpetaCompartida.FullName -AccessPerms Everyone -FullAccess
+New-SmbShare -Name "compartida" -Path $carpetaCompartida.FullName -FullAccess Everyone
 #3)
 #al encender la computadora se ejecuta el archivo copia que esta en esta carpeta
-Register-ScheduledJob -Name "AlEncender" -ScriptFile ".\Copia.ps1" -Trigger {
-    LogonTrigger -TriggerType StartUp
-} -Action {
-    Start-Process -FilePath ".\Copia.ps1"
-}
+$trigger = New-JobTrigger -AtStartup
 
+Register-ScheduledJob -Trigger $trigger -FilePath .\Copia.ps1 -Name copia
 
 
 
