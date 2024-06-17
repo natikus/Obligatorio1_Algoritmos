@@ -4,7 +4,7 @@
 CrearGrupo() {
     group=$1
 
-    groupadd $group
+    sudo groupadd $group
 }
 
 # CCrea los usuarios
@@ -14,7 +14,8 @@ newuser() {
     groupname=$3
 
     # Creo el usuario con su contraseña
-    sudo useradd -m -p $(echo $password | mkpasswd -s) $username
+    sudo useradd $username
+    sudo chpasswd $username: $password
     
 
     #lo añado al grupo que le corresponde
@@ -26,9 +27,9 @@ setuseraccess() {
     groupname=$1
     timespec=$2
 
-    users= getent group $groupname | cut -d: -f4
+    users=$(getent group $groupname | cut -d: -f4)
 
-    for $user in $users
+    for user in $users; do
         # pone la condicion en el archivo de configuracion
         echo "login;*;$user;$timespec" | sudo tee -a /etc/security/time.conf > /dev/null
 
@@ -36,6 +37,7 @@ setuseraccess() {
         if ! grep -q "pam_time.so" /etc/pam.d/login; then
             echo "account required pam_time.so" | sudo tee -a /etc/pam.d/login > /dev/null
         fi
+    done
 }
 
 #llamo a la c¿funcion para crear los grupos
@@ -69,14 +71,13 @@ newuser INSTALADOR01 INSTALA01 Instalador
 newuser INSTALADOR02 INSTALA02 Instalador
 
 # Creo la carpeta 
-mkdir -p /compartida
-chmod 777 /compartida
+sudo mkdir -p /compartida
 
 #la comparto con todos
-smbpasswd -a -U root -N everyone /shared
+sudo chmod 777 /compartida
 
 #abre el archivo copia
-Copia -e
+bash Copia.sh -e
 
 # se especifica que al iniciar se debe ejecutar ese archivo
 echo "@reboot root ./Copia.sh"
